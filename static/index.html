@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="description" content="Cognition PP — local-first presentations"/>
+  <meta name="theme-color" content="#ffffff" id="meta-theme-color"/>
+  <title>Untitled presentation — Cognition PP</title>
+  <script>
+    (function () {
+      try {
+        var t = localStorage.getItem('cognition-pp-theme');
+        if (t !== 'light' && t !== 'dark') {
+          t = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        }
+        document.documentElement.setAttribute('data-theme', t);
+      } catch (e) {
+        document.documentElement.setAttribute('data-theme', 'light');
+      }
+    })();
+  </script>
+  <link rel="icon" type="image/png" href="assets/logo.png"/>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Roboto:wght@400;500;700&family=Open+Sans:wght@400;600&family=Lora:ital,wght@0,400;0,600;1,400&family=Merriweather:ital,wght@0,400;0,700;1,400&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&family=Playfair+Display:wght@400;600&display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,200..500,0..1,-50..200&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="style.css"/>
+</head>
+<body>
+  <svg class="lg-filter-defs" aria-hidden="true" focusable="false">
+    <defs>
+      <!-- Kept for optional decorative layers; never applied on backdrop-filter nodes -->
+      <filter id="lg-refract" x="-20%" y="-20%" width="140%" height="140%" color-interpolation-filters="sRGB">
+        <feTurbulence type="fractalNoise" baseFrequency="0.02 0.035" numOctaves="2" seed="3" result="noise"/>
+        <feGaussianBlur in="noise" stdDeviation="0.8" result="softNoise"/>
+        <feDisplacementMap in="SourceGraphic" in2="softNoise" scale="4" xChannelSelector="R" yChannelSelector="G"/>
+      </filter>
+    </defs>
+  </svg>
+
+  <input type="file" id="file-open-input" class="sr-only" accept=".pdf,.png,.pptx,.json,.cog,.jpg,.jpeg" multiple/>
+  <input type="file" id="presentation-open-input" class="sr-only" accept=".pptx,.json,.cog,.pdf,.png"/>
+  <input type="file" id="insert-image-input" class="sr-only" accept="image/png,image/jpeg,image/svg+xml,image/webp,image/gif,.png,.jpg,.jpeg,.svg,.webp,.gif,.pdf"/>
+  <input type="file" id="insert-video-input" class="sr-only" accept="video/*,.mp4,.webm,.mov,.mkv,.avi,.m4v"/>
+  <input type="file" id="insert-audio-input" class="sr-only" accept="audio/*,.mp3,.wav,.ogg,.m4a,.aac,.flac"/>
+
+  <div id="app">
+    <aside id="sidebar" class="liquid-glass liquid-glass--medium glass glass-medium" aria-label="Library">
+      <div class="sidebar-brand">
+        <img src="assets/logo.png" alt="" class="sidebar-logo" width="36" height="36"/>
+        <div>
+          <div class="brand-name">Cognition PP</div>
+          <div class="brand-sub">Presentations</div>
+        </div>
+      </div>
+      <div class="sidebar-actions">
+        <button type="button" class="sidebar-btn pressable" id="sidebar-new">
+          <span class="material-symbols-outlined" aria-hidden="true">slideshow</span>
+          New Presentation
+        </button>
+        <button type="button" class="sidebar-btn pressable" id="sidebar-open">
+          <span class="material-symbols-outlined" aria-hidden="true">folder_open</span>
+          Open Presentation
+        </button>
+      </div>
+      <div class="tabs-head">
+        <span id="docs-folder-label">Library</span>
+        <button type="button" class="icon-btn pressable sm" id="refresh-files" title="Refresh file list" aria-label="Refresh">
+          <span class="material-symbols-outlined" aria-hidden="true">refresh</span>
+        </button>
+      </div>
+      <div class="file-hint">pdf · png · pptx</div>
+      <div id="doc-list" class="doc-list" role="list"></div>
+    </aside>
+
+    <div id="main-col">
+      <header id="header" class="liquid-glass liquid-glass--heavy glass glass-heavy">
+        <div class="header-top">
+          <div class="header-left">
+            <button type="button" class="docs-icon-btn pressable" aria-label="Cognition PP" title="Cognition PP">
+              <img src="assets/logo.png" alt="Cognition PP" class="app-logo" width="40" height="40"/>
+            </button>
+            <div class="title-block">
+              <div class="title-row">
+                <div class="doc-title" id="doc-title" contenteditable="true" spellcheck="false" role="textbox" aria-label="Presentation title">Untitled presentation</div>
+                <button type="button" class="icon-btn pressable" id="star-btn" title="Star" aria-label="Star" aria-pressed="false">
+                  <span class="material-symbols-outlined icon-star" aria-hidden="true">star</span>
+                </button>
+                <span class="status-pill" id="status-text" aria-live="polite">Saved locally</span>
+              </div>
+            </div>
+          </div>
+          <div class="header-actions">
+            <button type="button" class="glass-btn pressable" id="theme-toggle" title="Toggle dark mode" aria-label="Toggle dark mode">
+              <span class="material-symbols-outlined icon-light" aria-hidden="true">dark_mode</span>
+              <span class="material-symbols-outlined icon-dark" aria-hidden="true">light_mode</span>
+            </button>
+            <button type="button" class="glass-btn pressable" id="present-btn" title="Present (F5)" aria-label="Present">
+              <span class="material-symbols-outlined" aria-hidden="true">play_arrow</span>
+              Present
+            </button>
+            <button type="button" class="glass-btn pressable" id="save-btn" title="Save (Ctrl+S)" aria-label="Save">
+              <span class="material-symbols-outlined" aria-hidden="true">save</span>
+              Save
+            </button>
+          </div>
+        </div>
+
+        <div class="toolbar-area">
+          <div class="toolbar-pill liquid-glass liquid-glass--light glass glass-light" id="toolbar" role="toolbar" aria-label="Editing">
+            <div class="toolbar-scroll">
+              <!-- Insert (+) -->
+              <div class="tb-wrap">
+                <button type="button" class="t-icon pressable" id="insert-btn" title="Insert" aria-label="Insert" aria-haspopup="menu" aria-expanded="false">
+                  <span class="material-symbols-outlined" aria-hidden="true">add_box</span>
+                </button>
+                <div id="insert-menu" class="glass-menu liquid-glass liquid-glass--heavy hidden" role="menu" aria-label="Insert">
+                  <button type="button" class="menu-option" data-insert="image" role="menuitem">
+                    <span class="material-symbols-outlined" aria-hidden="true">image</span> Image / PDF page
+                  </button>
+                  <button type="button" class="menu-option" data-insert="video" role="menuitem">
+                    <span class="material-symbols-outlined" aria-hidden="true">movie</span> Video
+                  </button>
+                  <button type="button" class="menu-option" data-insert="audio" role="menuitem">
+                    <span class="material-symbols-outlined" aria-hidden="true">audio_file</span> Audio
+                  </button>
+                  <button type="button" class="menu-option" data-insert="text" role="menuitem">
+                    <span class="material-symbols-outlined" aria-hidden="true">text_fields</span> Text box
+                  </button>
+                </div>
+              </div>
+
+              <button type="button" class="t-icon pressable" id="add-slide-btn" title="Add slide" aria-label="Add slide">
+                <span class="material-symbols-outlined" aria-hidden="true">note_add</span>
+              </button>
+              <button type="button" class="t-icon pressable" id="del-slide-btn" title="Delete slide" aria-label="Delete slide">
+                <span class="material-symbols-outlined" aria-hidden="true">delete</span>
+              </button>
+
+              <div class="v-sep" role="separator" aria-hidden="true"></div>
+
+              <button type="button" class="t-icon pressable" id="undo-btn" title="Undo (Ctrl+Z)" aria-label="Undo">
+                <span class="material-symbols-outlined" aria-hidden="true">undo</span>
+              </button>
+              <button type="button" class="t-icon pressable" id="redo-btn" title="Redo (Ctrl+Y)" aria-label="Redo">
+                <span class="material-symbols-outlined" aria-hidden="true">redo</span>
+              </button>
+
+              <div class="v-sep" role="separator" aria-hidden="true"></div>
+
+              <!-- Font -->
+              <div class="tb-wrap">
+                <button type="button" class="t-label pressable font-drop" id="font-btn" title="Font" aria-haspopup="listbox" aria-expanded="false">
+                  <span id="font-label">Inter</span>
+                  <span class="material-symbols-outlined sm" aria-hidden="true">arrow_drop_down</span>
+                </button>
+                <div id="font-menu" class="glass-menu liquid-glass liquid-glass--heavy hidden" role="listbox" aria-label="Font family">
+                  <button type="button" class="menu-option font-option" data-font="Inter" style="font-family:Inter,sans-serif">Inter</button>
+                  <button type="button" class="menu-option font-option" data-font="Roboto" style="font-family:Roboto,sans-serif">Roboto</button>
+                  <button type="button" class="menu-option font-option" data-font="Open Sans" style="font-family:'Open Sans',sans-serif">Open Sans</button>
+                  <button type="button" class="menu-option font-option" data-font="Lora" style="font-family:Lora,serif">Lora</button>
+                  <button type="button" class="menu-option font-option" data-font="Merriweather" style="font-family:Merriweather,serif">Merriweather</button>
+                  <button type="button" class="menu-option font-option" data-font="Source Serif 4" style="font-family:'Source Serif 4',serif">Source Serif 4</button>
+                  <button type="button" class="menu-option font-option" data-font="Playfair Display" style="font-family:'Playfair Display',serif">Playfair Display</button>
+                  <button type="button" class="menu-option font-option" data-font="JetBrains Mono" style="font-family:'JetBrains Mono',monospace">JetBrains Mono</button>
+                  <button type="button" class="menu-option font-option" data-font="Arial" style="font-family:Arial,sans-serif">Arial</button>
+                  <button type="button" class="menu-option font-option" data-font="Georgia" style="font-family:Georgia,serif">Georgia</button>
+                </div>
+              </div>
+
+              <div class="font-size-box glass-inset" role="group" aria-label="Font size">
+                <button type="button" class="t-icon mini pressable" id="fs-minus" title="Decrease font size" aria-label="Decrease font size">
+                  <span class="material-symbols-outlined" aria-hidden="true">remove</span>
+                </button>
+                <input type="text" class="fs-val" id="fs-val" value="18" inputmode="numeric" aria-label="Font size"/>
+                <button type="button" class="t-icon mini pressable" id="fs-plus" title="Increase font size" aria-label="Increase font size">
+                  <span class="material-symbols-outlined" aria-hidden="true">add</span>
+                </button>
+              </div>
+
+              <div class="v-sep" role="separator" aria-hidden="true"></div>
+
+              <button type="button" class="t-icon pressable fmt" data-cmd="bold" title="Bold" aria-label="Bold">
+                <span class="material-symbols-outlined" aria-hidden="true">format_bold</span>
+              </button>
+              <button type="button" class="t-icon pressable fmt" data-cmd="italic" title="Italic" aria-label="Italic">
+                <span class="material-symbols-outlined" aria-hidden="true">format_italic</span>
+              </button>
+              <button type="button" class="t-icon pressable fmt" data-cmd="underline" title="Underline" aria-label="Underline">
+                <span class="material-symbols-outlined" aria-hidden="true">format_underlined</span>
+              </button>
+              <button type="button" class="t-icon pressable fmt" data-cmd="strikethrough" title="Strikethrough" aria-label="Strikethrough">
+                <span class="material-symbols-outlined" aria-hidden="true">strikethrough_s</span>
+              </button>
+              <button type="button" class="t-icon pressable fmt" data-cmd="superscript" title="Superscript" aria-label="Superscript">
+                <span class="material-symbols-outlined" aria-hidden="true">superscript</span>
+              </button>
+              <button type="button" class="t-icon pressable fmt" data-cmd="subscript" title="Subscript" aria-label="Subscript">
+                <span class="material-symbols-outlined" aria-hidden="true">subscript</span>
+              </button>
+
+              <div class="v-sep" role="separator" aria-hidden="true"></div>
+
+              <!-- Text color -->
+              <div class="tb-wrap">
+                <button type="button" class="t-icon pressable" id="color-btn" title="Text color" aria-label="Text color" aria-haspopup="dialog">
+                  <span class="material-symbols-outlined" aria-hidden="true">format_color_text</span>
+                  <i class="col-bar" id="col-bar" aria-hidden="true"></i>
+                </button>
+                <div id="picker" class="glass-menu liquid-glass liquid-glass--heavy color-picker hidden" role="dialog" aria-label="Text color"></div>
+              </div>
+
+              <!-- Highlight -->
+              <div class="tb-wrap">
+                <button type="button" class="t-icon pressable" id="highlight-btn" title="Highlight color" aria-label="Highlight" aria-haspopup="dialog">
+                  <span class="material-symbols-outlined" aria-hidden="true">ink_highlighter</span>
+                  <i class="hl-bar" id="hl-bar" aria-hidden="true"></i>
+                </button>
+                <div id="hl-picker" class="glass-menu liquid-glass liquid-glass--heavy color-picker hidden" role="dialog" aria-label="Highlight color">
+                  <button type="button" class="menu-option" id="hl-none">No highlight</button>
+                  <div id="hl-colors" class="swatch-grid"></div>
+                </div>
+              </div>
+
+              <!-- Page / slide color -->
+              <div class="tb-wrap">
+                <button type="button" class="t-icon pressable" id="page-color-btn" title="Page color" aria-label="Page color" aria-haspopup="dialog">
+                  <span class="material-symbols-outlined" aria-hidden="true">format_paint</span>
+                  <i class="page-bar" id="page-bar" aria-hidden="true"></i>
+                </button>
+                <div id="page-picker" class="glass-menu liquid-glass liquid-glass--heavy color-picker hidden" role="dialog" aria-label="Page color"></div>
+              </div>
+
+              <div class="v-sep" role="separator" aria-hidden="true"></div>
+
+              <button type="button" class="t-icon pressable align" data-align="left" title="Align left" aria-label="Align left">
+                <span class="material-symbols-outlined" aria-hidden="true">format_align_left</span>
+              </button>
+              <button type="button" class="t-icon pressable align" data-align="center" title="Align center" aria-label="Align center">
+                <span class="material-symbols-outlined" aria-hidden="true">format_align_center</span>
+              </button>
+              <button type="button" class="t-icon pressable align" data-align="right" title="Align right" aria-label="Align right">
+                <span class="material-symbols-outlined" aria-hidden="true">format_align_right</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <div id="workspace">
+        <div id="filmstrip" class="filmstrip" aria-label="Slides">
+          <div id="thumb-list" class="thumb-list"></div>
+        </div>
+
+        <div id="stage-wrap" class="stage-wrap mlg-content">
+          <div id="slide-stage" class="slide-stage">
+            <div id="slide-page" class="slide-page" role="region" aria-label="Slide canvas"></div>
+          </div>
+        </div>
+
+        <!-- Media viewer for pdf / png / raw binary open -->
+        <div id="media-view" class="media-view hidden" aria-label="File viewer">
+          <div class="media-toolbar">
+            <div class="data-meta">
+              <span id="media-title">File</span>
+              <span id="media-kind" class="muted"></span>
+            </div>
+            <div class="data-actions">
+              <button type="button" class="glass-btn pressable sm-btn" id="media-to-slides" title="Use extracted slides / stay on canvas">
+                <span class="material-symbols-outlined" aria-hidden="true">slideshow</span>
+                Edit slides
+              </button>
+              <button type="button" class="t-icon pressable" id="pdf-prev" title="Previous page" aria-label="Previous page">
+                <span class="material-symbols-outlined" aria-hidden="true">chevron_left</span>
+              </button>
+              <span id="pdf-page-label" class="muted">—</span>
+              <button type="button" class="t-icon pressable" id="pdf-next" title="Next page" aria-label="Next page">
+                <span class="material-symbols-outlined" aria-hidden="true">chevron_right</span>
+              </button>
+              <button type="button" class="t-icon pressable" id="pdf-zoom-out" title="Zoom out" aria-label="Zoom out">
+                <span class="material-symbols-outlined" aria-hidden="true">zoom_out</span>
+              </button>
+              <button type="button" class="t-icon pressable" id="pdf-zoom-in" title="Zoom in" aria-label="Zoom in">
+                <span class="material-symbols-outlined" aria-hidden="true">zoom_in</span>
+              </button>
+            </div>
+          </div>
+          <div id="media-body" class="media-body">
+            <div id="pdf-pages" class="pdf-pages"></div>
+            <img id="image-view" class="image-view hidden" alt="Opened image"/>
+            <iframe id="media-frame" class="media-frame hidden" title="Document"></iframe>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="present-overlay" class="present-overlay hidden" aria-hidden="true">
+    <div id="present-slide" class="present-slide"></div>
+    <div class="present-hint">Esc to exit · ← → to navigate</div>
+  </div>
+
+  <div id="pdf-page-dialog" class="modal-scrim hidden" aria-hidden="true">
+    <div class="modal-card liquid-glass liquid-glass--heavy">
+      <h3>Insert PDF page</h3>
+      <p class="muted">Choose a page number to insert as an image on the slide.</p>
+      <label class="field-label">Page <input type="number" id="pdf-page-num" min="1" value="1"/></label>
+      <div class="modal-actions">
+        <button type="button" class="glass-btn pressable" id="pdf-page-cancel">Cancel</button>
+        <button type="button" class="glass-btn pressable" id="pdf-page-ok">Insert</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="vendor/pdf.min.js"></script>
+  <script src="liquid-glass.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>

@@ -1,0 +1,80 @@
+{
+  "name": "cognitience-pp",
+  "version": "1.0.0",
+  "description": "Cognitience PP — local-first presentation app with liquid glass UI and Rust backend",
+  "main": "electron/main.js",
+  "author": "Cognitience",
+  "license": "MIT",
+  "private": true,
+  "scripts": {
+    "backend": "cargo run --release",
+    "backend:build": "cargo build --release",
+    "start": "cargo run",
+    "electron": "electron .",
+    "electron:dev": "cargo build --release && electron .",
+    "icon": "node scripts/make-icon.js",
+    "dist": "cargo build --release && node scripts/make-icon.js && electron-builder --win portable",
+    "dist:dir": "cargo build --release && node scripts/make-icon.js && electron-builder --win dir"
+  },
+  "build": {
+    "appId": "com.cognitience.pp",
+    "productName": "Cognitience PP",
+    "copyright": "Copyright © Cognitience",
+    "directories": {
+      "output": "dist",
+      "buildResources": "build"
+    },
+    "files": [
+      "electron/**/*",
+      "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "target/release/cognition-pp.exe",
+        "to": "backend/cognition-pp.exe"
+      },
+      {
+        "from": "static",
+        "to": "static"
+      },
+      {
+        "from": "build/icon.ico",
+        "to": "build/icon.ico"
+      }
+    ],
+    "extraFiles": [
+      {
+        "from": "build/icon.ico",
+        "to": "icon.ico"
+      }
+    ],
+    "win": {
+      "icon": "build/icon.ico",
+      "target": [
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "artifactName": "CognitiencePP_v${version}.${ext}",
+      "signAndEditExecutable": true
+    },
+    "portable": {
+      "artifactName": "CognitiencePP_v${version}.${ext}"
+    },
+    "asar": true,
+    "compression": "maximum",
+    "electronLanguages": ["en-US"]
+  },
+  "devDependencies": {
+    "electron": "^33.2.1",
+    "electron-builder": "^25.1.8",
+    "png-to-ico": "^2.1.8"
+  },
+  "allowScripts": {
+    "electron@33.2.1": true,
+    "electron@33.4.11": true
+  }
+}

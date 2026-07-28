@@ -38,6 +38,7 @@ $g.Dispose(); $bmp.Dispose(); $src.Dispose()
 }
 
 function resizeWithSips(srcPng, outPng, size) {
+  // macOS CI / local Mac
   fs.copyFileSync(srcPng, outPng);
   execFileSync('sips', ['-z', String(size), String(size), outPng], {
     stdio: 'pipe',
@@ -50,6 +51,7 @@ function resize(srcPng, outPng, size) {
   } else if (process.platform === 'win32') {
     resizeWithPowerShell(srcPng, outPng, size);
   } else {
+    // Linux CI fallback: copy as-is (prefer source already >= size)
     fs.copyFileSync(srcPng, outPng);
   }
 }
@@ -82,6 +84,7 @@ async function main() {
     fs.writeFileSync(outIco, buf);
   }
 
+  // electron-builder mac requires >= 512x512
   const macPng = path.join(tmpDir, `icon-${macSize}.png`);
   try {
     resize(src, macPng, macSize);

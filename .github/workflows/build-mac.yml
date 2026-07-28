@@ -1,0 +1,62 @@
+name: Build Mac
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - 'v*'
+
+env:
+  CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+
+jobs:
+  mac:
+    runs-on: macos-14
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: arm64
+            rust_target: ''
+            electron_flag: '--arm64'
+          - arch: x64
+            rust_target: x86_64-apple-darwin
+            electron_flag: '--x64'
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+
+      - name: Install npm deps
+        run: npm ci
+
+      - name: Build Rust backend (native arm64)
+        if: matrix.arch == 'arm64'
+        run: cargo build --release
+
+      - name: Build Rust backend (x64)
+        if: matrix.arch == 'x64'
+        run: |
+          rustup target add x86_64-apple-darwin
+          cargo build --release --target x86_64-apple-darwin
+
+      - name: Build icons
+        run: node scripts/make-icon.js
+
+      - name: Package Mac zip
+        env:
+          COG_RUST_TARGET: ${{ matrix.rust_target }}
+        run: npx electron-builder --config electron-builder.config.js --mac zip ${{ matrix.electron_flag }}
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: mac-${{ matrix.arch }}
+          path: dist/*_mac_*.zip
+          if-no-files-found: error

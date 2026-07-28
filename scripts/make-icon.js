@@ -1,6 +1,5 @@
 /**
- * Build multi-size Windows .ico (and icon.png) from static/assets/logo.png.
- * Multi-size ICOs are required for correct taskbar / pin icons on Windows.
+ * Build Windows .ico + Mac-ready icon.png (>=512) from static/assets/logo.png.
  */
 'use strict';
 
@@ -14,7 +13,8 @@ const src = path.join(root, 'static', 'assets', 'logo.png');
 const buildDir = path.join(root, 'build');
 const outIco = path.join(buildDir, 'icon.ico');
 const outPng = path.join(buildDir, 'icon.png');
-const sizes = [16, 24, 32, 48, 64, 128, 256];
+const icoSizes = [16, 24, 32, 48, 64, 128, 256];
+const macSize = 1024;
 
 function resizeWithPowerShell(srcPng, outPng, size) {
   const ps = `
@@ -37,6 +37,23 @@ $g.Dispose(); $bmp.Dispose(); $src.Dispose()
   );
 }
 
+function resizeWithSips(srcPng, outPng, size) {
+  fs.copyFileSync(srcPng, outPng);
+  execFileSync('sips', ['-z', String(size), String(size), outPng], {
+    stdio: 'pipe',
+  });
+}
+
+function resize(srcPng, outPng, size) {
+  if (process.platform === 'darwin') {
+    resizeWithSips(srcPng, outPng, size);
+  } else if (process.platform === 'win32') {
+    resizeWithPowerShell(srcPng, outPng, size);
+  } else {
+    fs.copyFileSync(srcPng, outPng);
+  }
+}
+
 async function main() {
   if (!fs.existsSync(src)) {
     console.error('Missing logo:', src);
@@ -47,10 +64,10 @@ async function main() {
   const tmpDir = path.join(buildDir, '_icon_sizes');
   fs.mkdirSync(tmpDir, { recursive: true });
   const pngs = [];
-  for (const size of sizes) {
+  for (const size of icoSizes) {
     const p = path.join(tmpDir, `icon-${size}.png`);
     try {
-      resizeWithPowerShell(src, p, size);
+      resize(src, p, size);
       if (fs.existsSync(p) && fs.statSync(p).size > 0) pngs.push(p);
     } catch (e) {
       console.warn('resize failed for', size, e.message || e);
@@ -58,7 +75,6 @@ async function main() {
   }
 
   if (!pngs.length) {
-    // Fallback: single-source ICO
     const buf = await pngToIco(src);
     fs.writeFileSync(outIco, buf);
   } else {
@@ -66,21 +82,26 @@ async function main() {
     fs.writeFileSync(outIco, buf);
   }
 
-  // 256px (or largest) as icon.png for electron-builder / window icon fallback
-  const best = path.join(tmpDir, 'icon-256.png');
-  if (fs.existsSync(best)) fs.copyFileSync(best, outPng);
-  else fs.copyFileSync(src, outPng);
-
-  // Clean temp
+  const macPng = path.join(tmpDir, `icon-${macSize}.png`);
   try {
-    for (const p of pngs) fs.unlinkSync(p);
+    resize(src, macPng, macSize);
+    fs.copyFileSync(macPng, outPng);
+  } catch (e) {
+    console.warn('1024 resize failed, copying source:', e.message || e);
+    fs.copyFileSync(src, outPng);
+  }
+
+  try {
+    for (const p of [...pngs, macPng]) {
+      if (fs.existsSync(p)) fs.unlinkSync(p);
+    }
     fs.rmdirSync(tmpDir);
   } catch {
     /* ignore */
   }
 
   console.log('Wrote', outIco, '(' + fs.statSync(outIco).size + ' bytes)');
-  console.log('Wrote', outPng);
+  console.log('Wrote', outPng, '(' + fs.statSync(outPng).size + ' bytes)');
 }
 
 main().catch((e) => {

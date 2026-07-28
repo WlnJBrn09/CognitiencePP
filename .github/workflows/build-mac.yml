@@ -52,7 +52,7 @@ jobs:
       - name: Package Mac zip
         env:
           COG_RUST_TARGET: ${{ matrix.rust_target }}
-        run: npx electron-builder --config electron-builder.config.js --mac zip ${{ matrix.electron_flag }}
+        run: npx electron-builder --config electron-builder.config.js --publish never --mac zip ${{ matrix.electron_flag }}
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4

@@ -1,12 +1,12 @@
 /**
  * Build Windows .ico + Mac-ready icon.png (>=512) from static/assets/logo.png.
+ * On macOS CI we only resize icon.png (ICO is Windows-only and already committed).
  */
 'use strict';
 
 const fs = require('fs');
 const path = require('path');
 const { execFileSync } = require('child_process');
-const pngToIco = require('png-to-ico');
 
 const root = path.resolve(__dirname, '..');
 const src = path.join(root, 'static', 'assets', 'logo.png');
@@ -38,21 +38,16 @@ $g.Dispose(); $bmp.Dispose(); $src.Dispose()
 }
 
 function resizeWithSips(srcPng, outPng, size) {
-  // macOS CI / local Mac
-  fs.copyFileSync(srcPng, outPng);
-  execFileSync('sips', ['-z', String(size), String(size), outPng], {
-    stdio: 'pipe',
-  });
-}
-
-function resize(srcPng, outPng, size) {
-  if (process.platform === 'darwin') {
-    resizeWithSips(srcPng, outPng, size);
-  } else if (process.platform === 'win32') {
-    resizeWithPowerShell(srcPng, outPng, size);
-  } else {
-    // Linux CI fallback: copy as-is (prefer source already >= size)
-    fs.copyFileSync(srcPng, outPng);
+  // Write to a temp path then move — sips sometimes leaves incomplete files in-place.
+  const tmp = outPng + '.tmp.png';
+  fs.copyFileSync(srcPng, tmp);
+  execFileSync('sips', ['-z', String(size), String(size), tmp], { stdio: 'pipe' });
+  // Force PNG format
+  execFileSync('sips', ['-s', 'format', 'png', tmp, '--out', outPng], { stdio: 'pipe' });
+  try {
+    fs.unlinkSync(tmp);
+  } catch {
+    /* ignore */
   }
 }
 
@@ -63,13 +58,27 @@ async function main() {
   }
   fs.mkdirSync(buildDir, { recursive: true });
 
+  // macOS: only need a >=512 PNG for electron-builder; skip ICO.
+  if (process.platform === 'darwin') {
+    resizeWithSips(src, outPng, macSize);
+    console.log('Wrote', outPng, '(' + fs.statSync(outPng).size + ' bytes)');
+    return;
+  }
+
+  if (process.platform !== 'win32') {
+    fs.copyFileSync(src, outPng);
+    console.log('Wrote', outPng, '(copied source)');
+    return;
+  }
+
+  const pngToIco = require('png-to-ico');
   const tmpDir = path.join(buildDir, '_icon_sizes');
   fs.mkdirSync(tmpDir, { recursive: true });
   const pngs = [];
   for (const size of icoSizes) {
     const p = path.join(tmpDir, `icon-${size}.png`);
     try {
-      resize(src, p, size);
+      resizeWithPowerShell(src, p, size);
       if (fs.existsSync(p) && fs.statSync(p).size > 0) pngs.push(p);
     } catch (e) {
       console.warn('resize failed for', size, e.message || e);
@@ -84,15 +93,9 @@ async function main() {
     fs.writeFileSync(outIco, buf);
   }
 
-  // electron-builder mac requires >= 512x512
   const macPng = path.join(tmpDir, `icon-${macSize}.png`);
-  try {
-    resize(src, macPng, macSize);
-    fs.copyFileSync(macPng, outPng);
-  } catch (e) {
-    console.warn('1024 resize failed, copying source:', e.message || e);
-    fs.copyFileSync(src, outPng);
-  }
+  resizeWithPowerShell(src, macPng, macSize);
+  fs.copyFileSync(macPng, outPng);
 
   try {
     for (const p of [...pngs, macPng]) {

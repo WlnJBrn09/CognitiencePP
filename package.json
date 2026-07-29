@@ -1,8 +1,7 @@
 {
   "name": "cognitience-pp",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Cognitience PP — local-first presentation app with liquid glass UI and Rust backend",
-  "main": "electron/main.js",
   "author": "Cognitience",
   "license": "MIT",
   "private": true,
@@ -10,21 +9,14 @@
     "backend": "cargo run --release",
     "backend:build": "cargo build --release",
     "start": "cargo run",
-    "electron": "electron .",
-    "electron:dev": "cargo build --release && electron .",
+    "native": "cargo build --release && cargo build --release --manifest-path native-host/Cargo.toml && powershell -NoProfile -Command \"Start-Process -FilePath (Resolve-Path 'native-host/target/release/cognition-pp-native.exe') -WindowStyle Normal\"",
+    "native:build": "cargo build --release && cargo build --release --manifest-path native-host/Cargo.toml",
+    "native:headless": "cargo build --release && cargo build --release --manifest-path native-host/Cargo.toml && set COGNITION_NATIVE_HEADLESS_SECS=20&& native-host\\target\\release\\cognition-pp-native.exe --headless",
     "icon": "node scripts/make-icon.js",
-    "dist": "cargo build --release && node scripts/make-icon.js && electron-builder --config electron-builder.config.js --win portable",
-    "dist:dir": "cargo build --release && node scripts/make-icon.js && electron-builder --config electron-builder.config.js --win dir",
-    "dist:mac": "cargo build --release && node scripts/make-icon.js && CSC_IDENTITY_AUTO_DISCOVERY=false electron-builder --config electron-builder.config.js --mac zip --arm64",
-    "dist:mac:x64": "rustup target add x86_64-apple-darwin && cargo build --release --target x86_64-apple-darwin && node scripts/make-icon.js && COG_RUST_TARGET=x86_64-apple-darwin CSC_IDENTITY_AUTO_DISCOVERY=false electron-builder --config electron-builder.config.js --mac zip --x64"
+    "dist": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/package-native-win.ps1",
+    "dist:win": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/package-native-win.ps1"
   },
   "devDependencies": {
-    "electron": "^33.2.1",
-    "electron-builder": "^25.1.8",
     "png-to-ico": "^2.1.8"
-  },
-  "allowScripts": {
-    "electron@33.2.1": true,
-    "electron@33.4.11": true
   }
 }
